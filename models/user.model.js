@@ -55,10 +55,11 @@ const userSchema = new Schema(
 
 //we have other mongoose hooks available like pre, post, validate, remove, update, findOneAndUpdate etc. 
 // Here we are using pre hook to hash the password before saving it to the database.
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
+
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) return;
+
     this.password = await bcrypt.hash(this.password, 10);
-    next();
 });
 
 //mongoose also provide many methods.We can also design our own methods.
