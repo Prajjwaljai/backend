@@ -162,4 +162,123 @@ const refreshAccessToken = asyncHandler(async(req, res)=>{
 });
 
 
-export {registerUser, loginUser, logoutUser, refreshAccessToken};
+const changeCurrentPassword = asyncHandler(async(req, res)=>{
+    const {oldPassword, newPassword} = req.body;
+    const user = await User.findById(req.user?._id);
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+    if(!isPasswordCorrect){
+        throw new ApiError(400, "Invalid old password");
+    }
+
+    user.password = newPassword;
+    await user.save({validateBeforeSave: false});
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Password changed successfully")
+    );
+});
+
+const getCurrentUser = asyncHandler(async(req, res)=>{
+    return res.status(200).json(
+        new ApiResponse(200, req.user, "Current user fetched successfully")
+    );
+});
+
+const updateAccountDetails = asyncHandler(async(req, res)=>{
+    const {fullName, email} = req.body;
+    if(!fullName && !email){
+        throw new ApiError(400, "At least one field is required to update");
+    }
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                fullName,
+                email
+            }
+        },
+        { new: true }
+    ).select("-password");
+
+    return res.status(200).json(
+        new ApiResponse(200, user, "User updated successfully")
+    );
+});//for files try to keep their end point seperate from the main user 
+// update end point. Because if we have to update only one file then we have to 
+// send all the files in the request. So, it is better to keep the file upload end
+// point separate from the main user update end point.
+
+
+const updateUserAvatar = asyncHandler(async(req, res)=>{
+    const avatarLocalPath = req.file?.avatar[0]?.path;
+    if(!avatarLocalPath){
+        throw new ApiError(400, "Avatar file is required");
+    }
+    //delete old avatar from cloudinary
+    if(req.user?.avatar) {
+        await deleteFromCloudinary(req.user.avatar);
+    }
+
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    if(!avatar){
+        throw new ApiError(500, "Error while uploading avatar");
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                avatar: avatar.url
+            }
+        },
+        { new: true }
+    ).select("-password");
+
+    return res.status(200).json(
+        new ApiResponse(200, user, "Avatar updated successfully")
+    );
+});
+
+const updateUserCoverImage = asyncHandler(async(req, res)=>{
+    const coverImageLocalPath = req.file?.coverImage[0]?.path;//check
+    if(!coverImageLocalPath){
+        throw new ApiError(400, "Cover image is required");
+    }
+    //delete old cover image from cloudinary
+    if(req.user?.coverImage) {
+        await deleteFromCloudinary(req.user.coverImage);
+    }
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+    if(!coverImage){
+        throw new ApiError(500, "Error while uploading cover image");
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                coverImage: coverImage.url
+            }
+        },
+        { new: true }
+    ).select("-password");
+
+    return res.status(200).json(
+        new ApiResponse(200, user, "Cover image updated successfully")
+    );
+});
+
+
+
+
+
+
+export {registerUser, loginUser, logoutUser, 
+        refreshAccessToken,
+        changeCurrentPassword, 
+        getCurrentUser, 
+        updateAccountDetails,
+        updateUserAvatar,
+        updateUserCoverImage
+    };
