@@ -54,8 +54,8 @@ const registerUser = asyncHandler(async (req, res) => {
         email,
         username: username.toLowerCase(),
         password,
-        avatar: avatar.url,
-        coverImage: coverImage?.url || ""
+        avatar: avatar.secure_url,
+        coverImage: coverImage?.secure_url || ""
     });
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
@@ -65,7 +65,7 @@ const registerUser = asyncHandler(async (req, res) => {
     }
 
     return res.status(201).json(
-        new ApiResponse(201, createdUser, "User registered successfully")
+        new ApiResponse(201,"User registered successfully",createdUser)
     );
 });
 
@@ -103,7 +103,7 @@ const loginUser = asyncHandler(async(req, res)=>{
     return res.status(200).cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(
-        new ApiResponse(200, {user: loggedInUser, accessToken, refreshToken}, "User logged in successfully")
+        new ApiResponse(200, "User logged in successfully", {user: loggedInUser, accessToken, refreshToken})
     )
 
 });
@@ -127,7 +127,7 @@ const logoutUser = asyncHandler(async(req, res)=>{
     return res.status(200).clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json(
-        new ApiResponse(200, {}, "User logged out successfully")
+        new ApiResponse(200, "User logged out successfully", {})
     )
 });
 
@@ -154,7 +154,7 @@ const refreshAccessToken = asyncHandler(async(req, res)=>{
         return res.status(200).cookie("accessToken", accessToken, options)
         .cookie("refreshToken", refreshToken, options)
         .json(
-            new ApiResponse(200, {accessToken, refreshToken}, "Access token refreshed successfully")
+            new ApiResponse(200, "Access token refreshed successfully", {accessToken, refreshToken})
         )
     }catch(err){
         throw new ApiError(401, err?.message || "Invalid refresh token");
@@ -175,13 +175,13 @@ const changeCurrentPassword = asyncHandler(async(req, res)=>{
     await user.save({validateBeforeSave: false});
 
     return res.status(200).json(
-        new ApiResponse(200, {}, "Password changed successfully")
+        new ApiResponse(200, "Password changed successfully", {})
     );
 });
 
 const getCurrentUser = asyncHandler(async(req, res)=>{
     return res.status(200).json(
-        new ApiResponse(200, req.user, "Current user fetched successfully")
+        new ApiResponse(200, "Current user fetched successfully", req.user)
     );
 });
 
@@ -208,7 +208,7 @@ const updateAccountDetails = asyncHandler(async(req, res)=>{
     ).select("-password -refreshToken");
 
     return res.status(200).json(
-        new ApiResponse(200, user, "User updated successfully")
+        new ApiResponse(200, "User updated successfully", user)
     );
 });//for files try to keep their end point seperate from the main user 
 // update end point. Because if we have to update only one file then we have to 
@@ -217,7 +217,7 @@ const updateAccountDetails = asyncHandler(async(req, res)=>{
 
 
 const updateUserAvatar = asyncHandler(async(req, res)=>{
-    const avatarLocalPath = req.file?.avatar[0]?.path;
+    const avatarLocalPath = req.file?.path;
     if(!avatarLocalPath){
         throw new ApiError(400, "Avatar file is required");
     }
@@ -235,19 +235,19 @@ const updateUserAvatar = asyncHandler(async(req, res)=>{
         req.user?._id,
         {
             $set: {
-                avatar: avatar.url
+                avatar: avatar.secure_url
             }
         },
         { new: true }
     ).select("-password -refreshToken");
 
     return res.status(200).json(
-        new ApiResponse(200, user, "Avatar updated successfully")
+        new ApiResponse(200, "Avatar updated successfully",user)
     );
 });
 
 const updateUserCoverImage = asyncHandler(async(req, res)=>{
-    const coverImageLocalPath = req.file?.coverImage[0]?.path;//check
+    const coverImageLocalPath = req.file?.path;//check
     if(!coverImageLocalPath){
         throw new ApiError(400, "Cover image is required");
     }
@@ -264,14 +264,14 @@ const updateUserCoverImage = asyncHandler(async(req, res)=>{
         req.user?._id,
         {
             $set: {
-                coverImage: coverImage.url
+                coverImage: coverImage.secure_url
             }
         },
         { new: true }
     ).select("-password -refreshToken");
 
     return res.status(200).json(
-        new ApiResponse(200, user, "Cover image updated successfully")
+        new ApiResponse(200, "Cover image updated successfully",user)
     );
 });
 
@@ -338,7 +338,7 @@ const getUserChannelProfile = asyncHandler(async(req, res)=>{
     }
 
     return res.status(200).json(
-        new ApiResponse(200, channel[0], "Channel profile fetched successfully")
+        new ApiResponse(200, "Channel profile fetched successfully", channel[0])
     );
 });
 
@@ -381,7 +381,7 @@ const getWatchHistory = asyncHandler(async(req, res)=>{
         }
     ])
     return res.status(200).json(
-        new ApiResponse(200, user[0]?.watchHistory || [], "Watch history fetched successfully")
+        new ApiResponse(200, "Watch history fetched successfully",user[0]?.watchHistory || [])
     );
 });
 
